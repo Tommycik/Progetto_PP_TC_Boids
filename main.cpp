@@ -7,7 +7,9 @@
 #include <SFML/Graphics.hpp>
 
 #include "Entities/Boid.h"
-
+#ifdef _WIN32
+#include <windows.h>
+#endif
 using namespace std;
 
 // parametri della simulazione
@@ -215,7 +217,7 @@ void updateBoids(vector<Boid>& boids, int threads, OptimizationLevel opt) {
             if (currY > bottommargin) newVy -= turnfactor;
             if (currX < leftmargin) newVx += turnfactor;
             if (currX > rightmargin) newVx -= turnfactor;
-
+// todo controllare ias tutti cambiano o solo alcuni
             // calcolo bias dei due gruppi
             if (group == 1) {
                 if (newVx > 0) currBias = std::min(maxbias, currBias + bias_increment);
@@ -254,70 +256,80 @@ void updateBoids(vector<Boid>& boids, int threads, OptimizationLevel opt) {
         }
 }
 
-// ... Le funzioni initFlock, runGUI, runBenchmark e main rimangono IDENTICHE al codice precedente ...
-// ... Basta aggiornare la initFlock e runGUI sostituendo `b.x` con `b.getX()` quando serve.
-
+//inizializza il vettore di boids
 void initFlock(vector<Boid>& boids, int N) {
+    //pulisce quelli del test precedente
     boids.clear();
-    std::random_device rd;
-    std::mt19937 gen(12345); 
+    //usa sempre lo stesso seme per avere test riproducibili
+    std::mt19937 gen(12345);
+    //distribuzioni posizioni e velocità
     std::uniform_real_distribution<float> pos_dist(200.0f, 600.0f);
     std::uniform_real_distribution<float> vel_dist(-5.0f, 5.0f);
-
+    //todo controllare assegnazioni gruppi
     for (int i = 0; i < N; ++i) {
         int group = 0;
         if (i < N * 0.1) group = 1;      
-        else if (i < N * 0.2) group = 2; 
+        else if (i < N * 0.2) group = 2;
+        //alloca l'oggetto direttamente nel vettore così da risparmiare operazioni
         boids.emplace_back(pos_dist(gen), pos_dist(gen), vel_dist(gen), vel_dist(gen), group, 0.001f);
     }
 }
 
 void runGUI() {
+    //vettore dei boids
     vector<Boid> boids;
+    //viene inizializzato
     initFlock(boids, 5000);
-
+    //viene creata la finestra
     sf::RenderWindow window(sf::VideoMode(gridWidth, gridHeight), "Boids OpenMP - Ryzen 3600X");
     window.setFramerateLimit(60);
-
+    // forma e colore dei boids
     sf::CircleShape boidShape(3.f, 3);
     boidShape.setFillColor(sf::Color::Cyan);
+    //setta lo scheduling
     omp_set_schedule(omp_sched_static, 64);
+    //main loop
     while (window.isOpen()) {
         sf::Event event;
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed) window.close();
         }
-
-        updateBoids(boids, 32, GRID);
-
+        //aggiorna le posizioni
+        updateBoids(boids, 12, GRID);
+        //pulisce lo schermo
         window.clear(sf::Color(20, 20, 30));
         
         for (const auto& b : boids) {
-            // Nota: Qui usiamo i GETTER per disegnare
+            //posiziona il boid
             boidShape.setPosition(b.getX(), b.getY());
+            //lo ruota nella direzione di movimento
             float angle = atan2(b.getVy(), b.getVx()) * 180 / 3.14159f;
-            boidShape.setRotation(angle + 90.f); 
+            boidShape.setRotation(angle + 90.f);
+            // lo disegna
             window.draw(boidShape);
         }
-
+        //mostra tutto a schermo
         window.display();
     }
 }
 
-#include <iostream>
-#include <vector>
 #include <string>
-#include <iomanip> // Necessario per setw, fixed e setprecision
-#include <omp.h>
-
+#include <fstream>
 void runBenchmark() {
+    // blocca la sospensione del pc per tutta la durata del benchmark
+    #ifdef _WIN32
+        SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED);
+    #endif
+        //numero di frame
     const int FRAMES = 50;
+    //ogni test è ripetuto varie volte e poi viene fatta la media
+    const int RUNS = 5;
 
     // i vari scaglioni di boids e thread su cui iterare
-    vector<int> boid_counts = {2000, 5000, 10000, 20000};
-    vector<int> thread_counts = {1, 2, 4, 6, 8, 12, 16, 32};
+    vector<int> boidCounts = {2000, 5000, 10000, 20000};
+    vector<int> threadCounts = {1, 2, 4, 6, 8, 12, 18};
 
-    cout << "\n=== BOIDS BENCHMARK (AMD Ryzen 5 3600X) ===" << endl;
+    cout << "\nBOIDS BENCHMARK (AMD Ryzen 5 3600X)" << endl;
     cout << "Frames per ogni simulazione: " << FRAMES << endl;
     //livelli di ottimizzazione
     vector<OptimizationLevel> opts = {NAIVE, SQUARED_DIST, BOUNDING_BOX,BOUNDING_BOX_NOT_IF, GRID};
@@ -325,25 +337,27 @@ void runBenchmark() {
     //tipi di scheduling
     vector<omp_sched_t> schedulers = {omp_sched_static, omp_sched_dynamic};
     vector<string> sched_names = {"STATICO", "DINAMICO"};
-    // Apertura del file CSV per il salvataggio dei dati
+    // apertura del file CSV per il salvataggio dei dati
     ofstream csvFile("benchmark_results.csv");
     if (!csvFile.is_open()) {
         cerr << "Errore: Impossibile creare il file CSV!" << endl;
         return;
     }
 
-    // Scrittura dell'header del CSV (facilmente leggibile da Python, Excel, ecc.)
+    // Scrittura dell'header del CSV
     csvFile << "Ottimizzazione,Scheduling,Boids,Threads,TempoMedio_s,Speedup,TempoMedioBoid_us\n";
     // loop principale sulle ottimizzazioni
-    for (size_t opt_idx = 0; opt_idx < opts.size(); ++opt_idx) {
-        for (size_t sched_idx = 0; sched_idx < schedulers.size(); ++sched_idx) {
+    for (size_t optIdx = 0; optIdx < opts.size(); ++optIdx) {
+        //loop sui i tipi di scheduling
+        for (size_t schedIdx = 0; schedIdx < schedulers.size(); ++schedIdx) {
 
             cout << "\n==============================================================" << endl;
-            cout << "[ OTTIMIZZAZIONE: " << opt_names[opt_idx] << " | SCHEDULING: " << sched_names[sched_idx] << " ]" << endl;
+            cout << "[ OTTIMIZZAZIONE: " << opt_names[optIdx] << " | SCHEDULING: " << sched_names[schedIdx] << " ]" << endl;
             cout << "==============================================================" << endl;
 
-            for (int numBoids : boid_counts) {
-                cout << "\n--> Test con " << numBoids << " boids:" << endl;
+            for (int numBoids : boidCounts) {
+                //formatta l'intestazione della tabella
+                cout << "\n--> Test con " << numBoids << " boids (Media su " << RUNS << " tentativi):" << endl;
                 cout << setw(8)  << "Threads"
                      << setw(15) << "Tempo tot (s)"
                      << setw(12) << "Speedup"
@@ -352,34 +366,55 @@ void runBenchmark() {
 
                 double seq_time = 0.0;
 
-                for (int threads : thread_counts) {
-                    vector<Boid> boids;
-                    initFlock(boids, numBoids);
+                for (int threads : threadCounts) {
+                    //tempo totale
+                    double total_elapsed_accumulator = 0.0;
 
-                    //imposta lo scheduling sotto test
-                    // chunk size di default
-                    omp_set_schedule(schedulers[sched_idx], 64);
-                    //calcola il tempo di esecuzione
-                    double start_time = omp_get_wtime();
-                    for (int frame = 0; frame < FRAMES; ++frame) {
-                        updateBoids(boids, threads, opts[opt_idx]);
+                    //esegue il sotto-test per 5 volte per sicurezza
+                    for (int run = 0; run < RUNS; ++run) {
+                        vector<Boid> boids;
+                        initFlock(boids, numBoids);
+
+                        //imposta lo scheduling sotto test
+                        // chunk size di default
+                        omp_set_schedule(schedulers[schedIdx], 64);
+
+                        //calcola il tempo di esecuzione facendo la differenza
+                        double start_time = omp_get_wtime();
+                        for (int frame = 0; frame < FRAMES; ++frame) {
+                            //aggiorna i boids
+                            updateBoids(boids, threads, opts[optIdx]);
+                        }
+                        total_elapsed_accumulator += (omp_get_wtime() - start_time);
                     }
-                    double elapsed = omp_get_wtime() - start_time;
+                    // fa la media
+                    double avg_elapsed = total_elapsed_accumulator / static_cast<double>(RUNS);
+
                     //tempo per boid
-                    double time_per_boid_us = (elapsed * 1000000.0) / (FRAMES * numBoids);
-
+                    double time_per_boid_us = (avg_elapsed * 1000000.0) / (FRAMES * numBoids);
+                    //stampa output
                     cout << setw(8) << threads
-                         << setw(15) << fixed << setprecision(4) << elapsed;
+                         << setw(15) << fixed << setprecision(4) << avg_elapsed;
 
+                    double speedup = 1.00;
                     if (threads == 1) {
-                        seq_time = elapsed;
+                        seq_time = avg_elapsed;
                         cout << setw(12) << "1.00x";
                     } else {
-                        double speedup = seq_time / elapsed;
+                        speedup = seq_time / avg_elapsed;
                         cout << setw(11) << fixed << setprecision(2) << speedup << "x";
                     }
 
                     cout << setw(24) << fixed << setprecision(3) << time_per_boid_us << endl;
+
+                    //salva i dati nel file csv
+                    csvFile << opt_names[optIdx] << ","
+                            << sched_names[schedIdx] << ","
+                            << numBoids << ","
+                            << threads << ","
+                            << fixed << setprecision(6) << avg_elapsed << ","
+                            << setprecision(2) << speedup << ","
+                            << setprecision(3) << time_per_boid_us << "\n";
                 }
             }
         }
@@ -388,6 +423,7 @@ void runBenchmark() {
 
 int main() {
     int choice;
+    //ciclo principale
     do{
         cout << "Seleziona Modalita':\n";
         cout << "1. Simulazione Grafica (GUI SFML)\n";
@@ -400,8 +436,6 @@ int main() {
         else if (choice == 2) runBenchmark();
         else cout << "Scelta non valida, riprova.\n";
     }while (choice!= 3);
-
-
 
     return 0;
 }
