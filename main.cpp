@@ -217,7 +217,6 @@ void updateBoids(vector<Boid>& boids, int threads, OptimizationLevel opt) {
             if (currY > bottommargin) newVy -= turnfactor;
             if (currX < leftmargin) newVx += turnfactor;
             if (currX > rightmargin) newVx -= turnfactor;
-// todo controllare ias tutti cambiano o solo alcuni
             // calcolo bias dei due gruppi
             if (group == 1) {
                 if (newVx > 0) currBias = std::min(maxbias, currBias + bias_increment);
@@ -265,7 +264,6 @@ void initFlock(vector<Boid>& boids, int N) {
     //distribuzioni posizioni e velocità
     std::uniform_real_distribution<float> pos_dist(200.0f, 600.0f);
     std::uniform_real_distribution<float> vel_dist(-5.0f, 5.0f);
-    //todo controllare assegnazioni gruppi
     for (int i = 0; i < N; ++i) {
         int group = 0;
         if (i < N * 0.1) group = 1;      
