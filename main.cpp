@@ -331,10 +331,10 @@ void runBenchmark() {
     cout << "Frames per ogni simulazione: " << FRAMES << endl;
     //livelli di ottimizzazione
     vector<OptimizationLevel> opts = {NAIVE, SQUARED_DIST, BOUNDING_BOX,BOUNDING_BOX_NOT_IF, GRID};
-    vector<string> opt_names = {"NAIVE (sqrt)", "SQUARED_DIST", "BOUNDING_BOX", "BOUNDING_BOX_NOT_IF", "GRID"};
+    vector<string> optNames = {"NAIVE (sqrt)", "SQUARED_DIST", "BOUNDING_BOX", "BOUNDING_BOX_NOT_IF", "GRID"};
     //tipi di scheduling
     vector<omp_sched_t> schedulers = {omp_sched_static, omp_sched_dynamic};
-    vector<string> sched_names = {"STATICO", "DINAMICO"};
+    vector<string> schedNames = {"STATICO", "DINAMICO"};
     // apertura del file CSV per il salvataggio dei dati
     ofstream csvFile("benchmark_results.csv");
     if (!csvFile.is_open()) {
@@ -350,7 +350,7 @@ void runBenchmark() {
         for (size_t schedIdx = 0; schedIdx < schedulers.size(); ++schedIdx) {
 
             cout << "\n==============================================================" << endl;
-            cout << "[ OTTIMIZZAZIONE: " << opt_names[optIdx] << " | SCHEDULING: " << sched_names[schedIdx] << " ]" << endl;
+            cout << "[ OTTIMIZZAZIONE: " << optNames[optIdx] << " | SCHEDULING: " << schedNames[schedIdx] << " ]" << endl;
             cout << "==============================================================" << endl;
 
             for (int numBoids : boidCounts) {
@@ -362,11 +362,11 @@ void runBenchmark() {
                      << setw(24) << "T. medio/Boid (us)" << endl;
                 cout << "--------------------------------------------------------------" << endl;
 
-                double seq_time = 0.0;
+                double seqTime = 0.0;
 
                 for (int threads : threadCounts) {
                     //tempo totale
-                    double total_elapsed_accumulator = 0.0;
+                    double elapsedAccumulator = 0.0;
 
                     //esegue il sotto-test per 5 volte per sicurezza
                     for (int run = 0; run < RUNS; ++run) {
@@ -378,41 +378,41 @@ void runBenchmark() {
                         omp_set_schedule(schedulers[schedIdx], 64);
 
                         //calcola il tempo di esecuzione facendo la differenza
-                        double start_time = omp_get_wtime();
+                        double startTime = omp_get_wtime();
                         for (int frame = 0; frame < FRAMES; ++frame) {
                             //aggiorna i boids
                             updateBoids(boids, threads, opts[optIdx]);
                         }
-                        total_elapsed_accumulator += (omp_get_wtime() - start_time);
+                        elapsedAccumulator += (omp_get_wtime() - startTime);
                     }
                     // fa la media
-                    double avg_elapsed = total_elapsed_accumulator / static_cast<double>(RUNS);
+                    double avgElapsed = elapsedAccumulator / static_cast<double>(RUNS);
 
                     //tempo per boid
-                    double time_per_boid_us = (avg_elapsed * 1000000.0) / (FRAMES * numBoids);
+                    double timePerBoidUs = (avgElapsed * 1000000.0) / (FRAMES * numBoids);
                     //stampa output
                     cout << setw(8) << threads
-                         << setw(15) << fixed << setprecision(4) << avg_elapsed;
+                         << setw(15) << fixed << setprecision(4) << avgElapsed;
 
                     double speedup = 1.00;
                     if (threads == 1) {
-                        seq_time = avg_elapsed;
+                        seqTime = avgElapsed;
                         cout << setw(12) << "1.00x";
                     } else {
-                        speedup = seq_time / avg_elapsed;
+                        speedup = seqTime / avgElapsed;
                         cout << setw(11) << fixed << setprecision(2) << speedup << "x";
                     }
 
-                    cout << setw(24) << fixed << setprecision(3) << time_per_boid_us << endl;
+                    cout << setw(24) << fixed << setprecision(3) << timePerBoidUs << endl;
 
                     //salva i dati nel file csv
-                    csvFile << opt_names[optIdx] << ","
-                            << sched_names[schedIdx] << ","
+                    csvFile << optNames[optIdx] << ","
+                            << schedNames[schedIdx] << ","
                             << numBoids << ","
                             << threads << ","
-                            << fixed << setprecision(6) << avg_elapsed << ","
+                            << fixed << setprecision(6) << avgElapsed << ","
                             << setprecision(2) << speedup << ","
-                            << setprecision(3) << time_per_boid_us << "\n";
+                            << setprecision(3) << timePerBoidUs << "\n";
                 }
             }
         }
