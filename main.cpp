@@ -357,7 +357,9 @@ void runBenchmark() {
                 //formatta l'intestazione della tabella
                 cout << "\n--> Test con " << numBoids << " boids (Media su " << RUNS << " tentativi):" << endl;
                 cout << setw(8)  << "Threads"
-                     << setw(15) << "Tempo tot (s)"
+                     << setw(15) << "Tempo tot medio(s)"
+                     << setw(12) << "Min (s)"
+                     << setw(12) << "Max (s)"
                      << setw(12) << "Speedup"
                      << setw(24) << "T. medio/Boid (us)" << endl;
                 cout << "--------------------------------------------------------------" << endl;
@@ -403,7 +405,10 @@ void runBenchmark() {
                     double timePerBoidUs = (avgElapsed * 1000000.0) / (FRAMES * numBoids);
                     //stampa output
                     cout << setw(8) << threads
-                         << setw(15) << fixed << setprecision(4) << avgElapsed;
+                         << setw(15) << fixed << setprecision(4) << avgElapsed
+                         << setw(12) << fixed << setprecision(4) << minElapsed
+                         << setw(12) << fixed << setprecision(4) << maxElapsed;
+
 
                     double speedup = 1.00;
                     if (threads == 1) {
@@ -422,6 +427,8 @@ void runBenchmark() {
                             << numBoids << ","
                             << threads << ","
                             << fixed << setprecision(6) << avgElapsed << ","
+                            << fixed << setprecision(6) << minElapsed << ","
+                            << fixed << setprecision(6) << maxElapsed << ","
                             << setprecision(2) << speedup << ","
                             << setprecision(3) << timePerBoidUs << "\n";
                 }
