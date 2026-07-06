@@ -331,7 +331,7 @@ void runBenchmark() {
     cout << "Frames per ogni simulazione: " << FRAMES << endl;
     //livelli di ottimizzazione
     vector<OptimizationLevel> opts = {NAIVE, SQUARED_DIST, BOUNDING_BOX,BOUNDING_BOX_NOT_IF, GRID};
-    vector<string> optNames = {"NAIVE (sqrt)", "SQUARED_DIST", "BOUNDING_BOX", "BOUNDING_BOX_NOT_IF", "GRID"};
+    vector<string> optNames = {"NAIVE", "SQUARED_DIST", "BOUNDING_BOX", "BOUNDING_BOX_NOT_IF", "GRID"};
     //tipi di scheduling
     vector<omp_sched_t> schedulers = {omp_sched_static, omp_sched_dynamic};
     vector<string> schedNames = {"STATICO", "DINAMICO"};
@@ -343,7 +343,7 @@ void runBenchmark() {
     }
 
     // Scrittura dell'header del CSV
-    csvFile << "Ottimizzazione,Scheduling,Boids,Threads,TempoMedio_s,Speedup,TempoMedioBoid_us\n";
+    csvFile << "Ottimizzazione,Scheduling,Boids,Threads,TempoMedio_s,TempoMin_s,TempoMax_s,Speedup,TempoMedioBoid_us\n";
     // loop principale sulle ottimizzazioni
     for (size_t optIdx = 0; optIdx < opts.size(); ++optIdx) {
         //loop sui i tipi di scheduling
@@ -365,8 +365,10 @@ void runBenchmark() {
                 double seqTime = 0.0;
 
                 for (int threads : threadCounts) {
-                    //tempo totale
+                    //tempo totale, massimo e minimo
                     double elapsedAccumulator = 0.0;
+                    double minElapsed = 0.0;
+                    double maxElapsed = 0.0;
 
                     //esegue il sotto-test per 5 volte per sicurezza
                     for (int run = 0; run < RUNS; ++run) {
@@ -383,7 +385,16 @@ void runBenchmark() {
                             //aggiorna i boids
                             updateBoids(boids, threads, opts[optIdx]);
                         }
-                        elapsedAccumulator += (omp_get_wtime() - startTime);
+                        double currentElapsed = omp_get_wtime() - startTime;
+                        elapsedAccumulator += currentElapsed;
+                        //traccia il tempo minimo e massimo tra i vari tentativi
+                        if (run == 0) {
+                            minElapsed = currentElapsed;
+                            maxElapsed = currentElapsed;
+                        } else {
+                            if (currentElapsed < minElapsed) minElapsed = currentElapsed;
+                            if (currentElapsed > maxElapsed) maxElapsed = currentElapsed;
+                        }
                     }
                     // fa la media
                     double avgElapsed = elapsedAccumulator / static_cast<double>(RUNS);
