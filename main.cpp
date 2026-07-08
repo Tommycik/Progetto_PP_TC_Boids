@@ -52,7 +52,7 @@ enum OptimizationLevel {
     NAIVE,//la peggiore usa sqrt e usa molti più cicli di clock
     SQUARED_DIST, //usa il quadrato della distanza e quindi solo somme e moltiplicazioni, meno cicli necessari
     BOUNDING_BOX, // controla subito la distanza se troppa non fa nessun calcolo
-    BOUNDING_BOX_NOT_IF, // uguale a bounding box ma senza ottimizzazione if
+    BOUNDING_BOX_CONTINUE, // uguale a bounding box ma usando continue nell'if
     GRID, // i boids controllano solo la loro tile e quelle adiacenti
 };
 
@@ -102,44 +102,40 @@ void updateBoids(vector<Boid>& boids, int threads, OptimizationLevel opt) {
                         int neighborX = cx + column;
                         int neighborY = cy + row;
 
-                        // salta se la cella vicina se è fuori dai confini dell'arena
-                        if (neighborX < 0 || neighborX >= gridCols || neighborY < 0 || neighborY >= gridRows)
-                            continue;
+                        // esegue solo se la cella vicina è nei confini dell'arena
+                        if (neighborX >= 0 && neighborX < gridCols && neighborY >= 0 && neighborY < gridRows) {
 
-                        // trova l'indice lineare del vettore della griglia
-                        int cellIdx = neighborY * gridCols + neighborX;
-                        const auto& cellBoids = grid[cellIdx];
+                            // trova l'indice lineare del vettore della griglia
+                            int cellIdx = neighborY * gridCols + neighborX;
+                            const auto& cellBoids = grid[cellIdx];
 
-                        // controlla i boid  presenti in questa  tile
-                        for (int otherId : cellBoids) {
-                            if (boid == otherId) continue;
+                            // controlla i boid  presenti in questa  tile
+                            for (int otherId : cellBoids) {
+                                // controlla che sia un boid diverso
+                                if (boid != otherId) {
 
-                            const Boid& other = boids[otherId];
+                                    const Boid& other = boids[otherId];
 
-                            // Distanza tra i boids
-                            float dx = currX - other.getX();
-                            float dy = currY - other.getY();
-                            //controlla prima la distanza
-                            if (std::abs(dx) < visualRange && std::abs(dy) < visualRange) {
-                                float distSq = dx * dx + dy * dy;
+                                    // Distanza tra i boids
+                                    float dx = currX - other.getX();
+                                    float dy = currY - other.getY();
+                                    //controlla prima la distanza
+                                    if (std::abs(dx) < visualRange && std::abs(dy) < visualRange) {
+                                        float distSq = dx * dx + dy * dy;
 
-                                if (distSq < protectedRangeSq) {
-                                    closeDx += dx;
-                                    closeDy += dy;
+                                        if (distSq < protectedRangeSq) {
+                                            closeDx += dx;
+                                            closeDy += dy;
+                                        }
+                                        else if (distSq < visualRangeSq) {
+                                            xposAvg += other.getX();
+                                            yposAvg += other.getY();
+                                            xvelAvg += other.getVx();
+                                            yvelAvg += other.getVy();
+                                            neighboring_boids++;
+                                        }
+                                    }
                                 }
-                                else if (distSq < visualRangeSq) {
-                                    xposAvg += other.getX();
-                                    yposAvg += other.getY();
-                                    xvelAvg += other.getVx();
-                                    yvelAvg += other.getVy();
-                                    neighboring_boids++;
-                                }
-                                else {
-                                    continue; // Cella giusta, ma fuori dal cerchio visivo
-                                }
-                            }
-                            else {
-                                continue; // Fallisce il bounding box nella tile
                             }
                         }
                     }
@@ -162,27 +158,26 @@ void updateBoids(vector<Boid>& boids, int threads, OptimizationLevel opt) {
                         float dist = std::sqrt(dx * dx + dy * dy);
                         if (dist < protectedRange) inProtected = true;
                         else if (dist < visualRange) inVisual = true;
-                        else continue;
+
                     } else if (opt == SQUARED_DIST) {
                         float distSq = dx * dx + dy * dy;
                         if (distSq < protectedRangeSq) inProtected = true;
                         else if (distSq < visualRangeSq) inVisual = true;
-                        else continue;
                     } else if (opt == BOUNDING_BOX) {
                         if (std::abs(dx) < visualRange && std::abs(dy) < visualRange) {
                             float distSq = dx * dx + dy * dy;
                             if (distSq < protectedRangeSq) inProtected = true;
                             else if (distSq < visualRangeSq) inVisual = true;
-                        } else {
-                            continue;
                         }
-                    }else if (opt == BOUNDING_BOX_NOT_IF) {
+                    }else if (opt == BOUNDING_BOX_CONTINUE) {
+                        //usa if con continue
                         if (std::abs(dx) < visualRange && std::abs(dy) < visualRange) {
                             float distSq = dx * dx + dy * dy;
                             if (distSq < protectedRangeSq) inProtected = true;
                             else if (distSq < visualRangeSq) inVisual = true;
+                        }else {
+                            continue;
                         }
-                        //no ottimizzazione if con continue
                     }
                     //boids nel range protetto
                     if (inProtected) {
@@ -330,8 +325,8 @@ void runBenchmark() {
     cout << "\nBOIDS BENCHMARK (AMD Ryzen 5 3600X)" << endl;
     cout << "Frames per ogni simulazione: " << FRAMES << endl;
     //livelli di ottimizzazione
-    vector<OptimizationLevel> opts = {NAIVE, SQUARED_DIST, BOUNDING_BOX,BOUNDING_BOX_NOT_IF, GRID};
-    vector<string> optNames = {"NAIVE", "SQUARED_DIST", "BOUNDING_BOX", "BOUNDING_BOX_NOT_IF", "GRID"};
+    vector<OptimizationLevel> opts = {NAIVE, SQUARED_DIST, BOUNDING_BOX,BOUNDING_BOX_CONTINUE, GRID};
+    vector<string> optNames = {"NAIVE", "SQUARED_DIST", "BOUNDING_BOX", "BOUNDING_BOX_CONTINUE", "GRID"};
     //tipi di scheduling
     vector<omp_sched_t> schedulers = {omp_sched_static, omp_sched_dynamic};
     vector<string> schedNames = {"STATICO", "DINAMICO"};
