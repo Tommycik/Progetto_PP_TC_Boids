@@ -38,6 +38,7 @@ const float bottommargin = gridHeight - topmargin;
 const float cellSize = visualRange;
 const int gridCols = static_cast<int>(gridWidth / cellSize);
 const int gridRows = static_cast<int>(gridHeight / cellSize);
+
 //funzione per ottenere la cella nella griglia
 inline int getCellIndex(float x, float y) {
     int cx = static_cast<int>(x / cellSize);
@@ -72,6 +73,7 @@ void updateBoids(vector<Boid>& boids, int threads, OptimizationLevel opt) {
     }
     //sezione parallela
     #pragma omp parallel
+    {
         //scheduling statico a blocchi di 64 così ogni thread gestisce i boid contigui in memoria migliorando acesso a cache
         #pragma omp for schedule(static, 64)
         for (int boid = 0; boid < numBoids; ++boid) {
@@ -238,6 +240,7 @@ void updateBoids(vector<Boid>& boids, int threads, OptimizationLevel opt) {
         for (int i = 0; i < numBoids; ++i) {
             boids[i].commit();
         }
+    }
 }
 
 //inizializza il vettore di boids
