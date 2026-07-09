@@ -52,7 +52,6 @@ enum OptimizationLevel {
     NAIVE,//la peggiore usa sqrt e usa molti più cicli di clock
     SQUARED_DIST, //usa il quadrato della distanza e quindi solo somme e moltiplicazioni, meno cicli necessari
     BOUNDING_BOX, // controla subito la distanza se troppa non fa nessun calcolo
-    BOUNDING_BOX_CONTINUE, // uguale a bounding box ma usando continue nell'if
     GRID, // i boids controllano solo la loro tile e quelle adiacenti
 };
 
@@ -168,15 +167,6 @@ void updateBoids(vector<Boid>& boids, int threads, OptimizationLevel opt) {
                             float distSq = dx * dx + dy * dy;
                             if (distSq < protectedRangeSq) inProtected = true;
                             else if (distSq < visualRangeSq) inVisual = true;
-                        }
-                    }else if (opt == BOUNDING_BOX_CONTINUE) {
-                        //usa if con continue
-                        if (std::abs(dx) < visualRange && std::abs(dy) < visualRange) {
-                            float distSq = dx * dx + dy * dy;
-                            if (distSq < protectedRangeSq) inProtected = true;
-                            else if (distSq < visualRangeSq) inVisual = true;
-                        }else {
-                            continue;
                         }
                     }
                     //boids nel range protetto
@@ -325,8 +315,8 @@ void runBenchmark() {
     cout << "\nBOIDS BENCHMARK (AMD Ryzen 5 3600X)" << endl;
     cout << "Frames per ogni simulazione: " << FRAMES << endl;
     //livelli di ottimizzazione
-    vector<OptimizationLevel> opts = {NAIVE, SQUARED_DIST, BOUNDING_BOX,BOUNDING_BOX_CONTINUE, GRID};
-    vector<string> optNames = {"NAIVE", "SQUARED_DIST", "BOUNDING_BOX", "BOUNDING_BOX_CONTINUE", "GRID"};
+    vector<OptimizationLevel> opts = {NAIVE, SQUARED_DIST, BOUNDING_BOX, GRID};
+    vector<string> optNames = {"NAIVE", "SQUARED_DIST", "BOUNDING_BOX", "GRID"};
     //tipi di scheduling
     vector<omp_sched_t> schedulers = {omp_sched_static, omp_sched_dynamic};
     vector<string> schedNames = {"STATICO", "DINAMICO"};
