@@ -25,9 +25,14 @@ FetchContent_MakeAvailable(SFML)
 
 # crea l'eseguibile
 add_executable(Project_1_TC
-        main.cpp
-        Entities/Boid.cpp
-        Entities/Boid.h
+        Src/main.cpp
+        Src/Entities/Boid.cpp
+        Src/Entities/Boid.h
+        Src/Config.hpp
+        Src/Simulation.hpp
+        Src/Simulation.cpp
+        Src/Pipelines.cpp
+        Src/Pipelines.hpp
 )
 
 # librerie
