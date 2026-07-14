@@ -1,14 +1,16 @@
 #include "Pipelines.hpp"
 #include <SFML/Graphics.hpp>
+// Gui
 void runGUI() {
     vector<Boid> boids;
     initFlock(boids, 5000);
+    //inizializza la finestra
     sf::RenderWindow window(sf::VideoMode(gridWidth, gridHeight), "Boids OpenMP - Ryzen 3600X");
     window.setFramerateLimit(60);
     sf::CircleShape boidShape(3.f, 3);
     boidShape.setFillColor(sf::Color::Cyan);
     omp_set_schedule(omp_sched_static, 64);
-
+    //ciclo principale
     while (window.isOpen()) {
         sf::Event event;
         while (window.pollEvent(event)) {
@@ -26,11 +28,13 @@ void runGUI() {
         window.display();
     }
 }
-
+// Benchmark
 void runBenchmark() {
+    //ottimizza il benchmark cosi da evitare l'interrompimento del sistema
     #ifdef _WIN32
         SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED);
     #endif
+    // varie configurazioni
     const int FRAMES = 50;
     const int RUNS = 5;
 
@@ -43,7 +47,7 @@ void runBenchmark() {
     vector<string> optNames = {"NAIVE", "SQUARED_DIST", "BOUNDING_BOX", "GRID"};
     vector<omp_sched_t> schedulers = {omp_sched_static, omp_sched_dynamic};
     vector<string> schedNames = {"STATICO", "DINAMICO"};
-
+    //crea il file csv
     ofstream csvFile("benchmark_results.csv");
     if (!csvFile.is_open()) {
         cerr << "Errore: Impossibile creare il file CSV!" << endl;
@@ -51,7 +55,7 @@ void runBenchmark() {
     }
 
     csvFile << "Ottimizzazione,Scheduling,Boids,Threads,TempoMedio_s,TempoMin_s,TempoMax_s,Speedup,TempoMedioBoid_us\n";
-
+    //ciclo di test
     for (size_t optIdx = 0; optIdx < opts.size(); ++optIdx) {
         for (size_t schedIdx = 0; schedIdx < schedulers.size(); ++schedIdx) {
 
@@ -85,7 +89,7 @@ void runBenchmark() {
                     }
                     seqTime = elapsedAccumulator / static_cast<double>(RUNS);
                 }
-
+                // testa i vari numeri di thread
                 for (int threads : threadCounts) {
                     double elapsedAccumulator = 0.0;
                     double minElapsed = 0.0;
@@ -112,7 +116,7 @@ void runBenchmark() {
                             if (currentElapsed > maxElapsed) maxElapsed = currentElapsed;
                         }
                     }
-
+                    //calcola i valori medi e i tempi per boid
                     double avgElapsed = elapsedAccumulator / static_cast<double>(RUNS);
                     double timePerBoidUs = (avgElapsed * 1000000.0) / (FRAMES * numBoids);
 
@@ -125,7 +129,7 @@ void runBenchmark() {
                     cout << setw(11) << fixed << setprecision(2) << speedup << "x";
 
                     cout << setw(24) << fixed << setprecision(3) << timePerBoidUs << endl;
-
+                    //salva i dati nel file csv
                     csvFile << optNames[optIdx] << ","
                             << schedNames[schedIdx] << ","
                             << numBoids << ","
@@ -139,5 +143,6 @@ void runBenchmark() {
             }
         }
     }
+    //chiude il file csv
     csvFile.close();
 }

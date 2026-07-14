@@ -1,5 +1,5 @@
 #include "Pipelines.hpp"
-
+//ciclo principale
 int main() {
     int choice;
     do {
