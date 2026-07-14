@@ -9,7 +9,7 @@ void runGUI() {
     window.setFramerateLimit(60);
     sf::CircleShape boidShape(3.f, 3);
     boidShape.setFillColor(sf::Color::Cyan);
-    omp_set_schedule(omp_sched_static, 64);
+    omp_set_schedule(omp_sched_dynamic, 64);
     //ciclo principale
     while (window.isOpen()) {
         sf::Event event;

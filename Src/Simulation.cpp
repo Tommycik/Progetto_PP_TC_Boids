@@ -182,7 +182,7 @@ void updateBoids(vector<Boid>& boids, int threads, OptimizationLevel opt) {
     #pragma omp parallel
     {
         // calcola l'update per ogni boid
-        #pragma omp for schedule(static, 64)
+        #pragma omp for schedule(runtime)
         for (int boid = 0; boid < numBoids; ++boid) {
             // variabili temporanee per l'update
             float xposAvg = 0, yposAvg = 0, xvelAvg = 0, yvelAvg = 0;
@@ -323,7 +323,7 @@ void updateBoids(vector<Boid>& boids, int threads, OptimizationLevel opt) {
             b.setNewY(currY + newVy);
         }
         // finalizza l'update
-        #pragma omp for schedule(static, 64)
+        #pragma omp for sschedule(runtime)
         for (int i = 0; i < numBoids; ++i) {
             boids[i].commit();
         }
