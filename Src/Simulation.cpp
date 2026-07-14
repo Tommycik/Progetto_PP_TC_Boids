@@ -238,7 +238,6 @@ void updateBoids(vector<Boid>& boids, int threads, OptimizationLevel opt) {
                     }
                 }
             } else {
-                #pragma omp simd reduction(+:closeDx,closeDy,xposAvg,yposAvg,xvelAvg,yvelAvg,neighboring_boids)
                 for (int otherId = 0; otherId < numBoids; ++otherId) {
                     if (boid == otherId) continue;
 
