@@ -48,11 +48,9 @@ target_link_libraries(Project_1_TC PRIVATE
 
 # flag OpenMP e Ottimizzazioni per GCC/Clang
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    target_compile_options(Project_1_TC PRIVATE -fopenmp)
     target_compile_options(Project_1_TC PRIVATE $<$<CONFIG:Release>:-O3 -march=native>)
     target_link_options(Project_1_TC PRIVATE -fopenmp)
 elseif(MSVC)
-    target_compile_options(Project_1_TC PRIVATE -openmp)
     # Applica /O2 /Oi /Ot SOLO se la configurazione è impostata su Release
-    target_compile_options(Project_1_TC PRIVATE $<$<CONFIG:Release>:/O2 /Oi /Ot>)
+    target_compile_options(Project_1_TC PRIVATE /openmp $<$<CONFIG:Release>:/O2 /Oi /Ot>)
 endif()
