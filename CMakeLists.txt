@@ -46,7 +46,7 @@ target_link_libraries(Project_1_TC PRIVATE
         sfml-system
 )
 
-# flag OpenMP e Ottimizzazioni per GCC/Clang
+# flag OpenMP e ottimizzazioni solo in modalità release
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     target_compile_options(Project_1_TC PRIVATE $<$<CONFIG:Release>:-O3 -march=native>)
     target_link_options(Project_1_TC PRIVATE -fopenmp)
