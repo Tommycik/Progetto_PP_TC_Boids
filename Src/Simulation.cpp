@@ -322,7 +322,7 @@ void updateBoids(vector<Boid>& boids, int threads, OptimizationLevel opt) {
             b.setNewY(currY + newVy);
         }
         // finalizza l'update
-        #pragma omp for sschedule(runtime)
+        #pragma omp for schedule(runtime)
         for (int i = 0; i < numBoids; ++i) {
             boids[i].commit();
         }

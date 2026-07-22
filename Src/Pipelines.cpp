@@ -39,7 +39,7 @@ void runBenchmark() {
     const int RUNS = 5;
 
     vector<int> boidCounts = {2000, 5000, 10000, 20000};
-    vector<int> threadCounts = {1, 2, 4, 6, 8, 12, 18};
+    vector<int> threadCounts = {1, 2, 4, 6, 8, 12, 18, 24};
 
     cout << "\nBOIDS BENCHMARK (AMD Ryzen 5 3600X)" << endl;
     cout << "Frames per ogni simulazione: " << FRAMES << endl;
