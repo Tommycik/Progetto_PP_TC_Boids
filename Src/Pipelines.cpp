@@ -54,7 +54,7 @@ void runBenchmark() {
         return;
     }
 
-    csvFile << "Ottimizzazione,Scheduling,Boids,Threads,TempoMedio_s,TempoMin_s,TempoMax_s,Speedup,TempoMedioBoid_us\n";
+    csvFile << "Ottimizzazione,Scheduling,Boids,Threads,TempoMedio_s,TempoMin_s,TempoMax_s,TempoSequenziale_s,Speedup,TempoMedioBoid_us\n";
     //ciclo di test
     for (size_t optIdx = 0; optIdx < opts.size(); ++optIdx) {
         for (size_t schedIdx = 0; schedIdx < schedulers.size(); ++schedIdx) {
@@ -137,6 +137,7 @@ void runBenchmark() {
                             << fixed << setprecision(6) << avgElapsed << ","
                             << fixed << setprecision(6) << minElapsed << ","
                             << fixed << setprecision(6) << maxElapsed << ","
+                            << fixed << setprecision(6) << seqTime << ","
                             << setprecision(2) << speedup << ","
                             << setprecision(3) << timePerBoidUs << "\n";
                 }
