@@ -4,8 +4,8 @@ int main() {
     int choice;
     do {
         cout << "Seleziona Modalita':\n";
-        cout << "1. Simulazione Grafica (GUI SFML)\n";
-        cout << "2. Esegui Benchmark (Test prestazioni per relazione)\n";
+        cout << "1. Simulazione Grafica \n";
+        cout << "2. Esegui Benchmark\n";
         cout << "3. Esci\n";
         cout << "Scelta: ";
         cin >> choice;
