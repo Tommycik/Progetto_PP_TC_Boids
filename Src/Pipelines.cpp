@@ -40,6 +40,7 @@ void runBenchmark() {
 
     vector<int> boidCounts = {2000, 5000, 10000, 20000};
     vector<int> threadCounts = {1, 2, 4, 6, 8, 12, 18, 24};
+    vector<int> chunkSizes = {1, 8, 32, 64, 128, 256};
 
     cout << "\nBOIDS BENCHMARK (AMD Ryzen 5 3600X)" << endl;
     cout << "Frames per ogni simulazione: " << FRAMES << endl;
@@ -54,7 +55,7 @@ void runBenchmark() {
         return;
     }
 
-    csvFile << "Ottimizzazione,Scheduling,Boids,Threads,TempoMedio_s,TempoMin_s,TempoMax_s,TempoSequenziale_s,Speedup,TempoMedioBoid_us\n";
+    csvFile << "Ottimizzazione,Scheduling,Boids,Threads,ChunkSize,NumeroChunk,TempoMedio_s,TempoMin_s,TempoMax_s,TempoSequenziale_s,Speedup,TempoMedioBoid_us\n";
     //ciclo di test
     for (size_t optIdx = 0; optIdx < opts.size(); ++optIdx) {
         for (size_t schedIdx = 0; schedIdx < schedulers.size(); ++schedIdx) {
@@ -64,15 +65,6 @@ void runBenchmark() {
             cout << "==============================================================" << endl;
 
             for (int numBoids : boidCounts) {
-                cout << "\n--> Test con " << numBoids << " boids (Media su " << RUNS << " tentativi):" << endl;
-                cout << setw(8)  << "Threads"
-                     << setw(22) << "Tempo tot medio(s)"
-                     << setw(12) << "Min (s)"
-                     << setw(12) << "Max (s)"
-                     << setw(12) << "Speedup"
-                     << setw(24) << "T. medio/Boid (us)" << endl;
-                cout << "--------------------------------------------------------------" << endl;
-
                 double seqTime = 0.0;
 
                 // calcolo preliminare della baseline sequenziale
@@ -89,57 +81,77 @@ void runBenchmark() {
                     }
                     seqTime = elapsedAccumulator / static_cast<double>(RUNS);
                 }
-                // testa i vari numeri di thread
-                for (int threads : threadCounts) {
-                    double elapsedAccumulator = 0.0;
-                    double minElapsed = 0.0;
-                    double maxElapsed = 0.0;
 
-                    for (int run = 0; run < RUNS; ++run) {
-                        vector<Boid> boids;
-                        initFlock(boids, numBoids);
+                // testa ogni dimensione del chunk con tutti i numeri di thread
+                for (int chunkSize : chunkSizes) {
+                    int numChunks = (numBoids + chunkSize - 1) / chunkSize;
 
-                        omp_set_schedule(schedulers[schedIdx], 64);
+                    cout << "\n--> Test con " << numBoids
+                         << " boids | Chunk: " << chunkSize
+                         << " | Numero chunk: " << numChunks
+                         << " (Media su " << RUNS << " tentativi):" << endl;
+                    cout << setw(8)  << "Threads"
+                         << setw(22) << "Tempo tot medio(s)"
+                         << setw(12) << "Min (s)"
+                         << setw(12) << "Max (s)"
+                         << setw(12) << "Speedup"
+                         << setw(24) << "T. medio/Boid (us)" << endl;
+                    cout << "--------------------------------------------------------------" << endl;
 
-                        double startTime = omp_get_wtime();
-                        for (int frame = 0; frame < FRAMES; ++frame) {
-                            updateBoids(boids, threads, opts[optIdx]);
+                    // testa i vari numeri di thread
+                    for (int threads : threadCounts) {
+                        double elapsedAccumulator = 0.0;
+                        double minElapsed = 0.0;
+                        double maxElapsed = 0.0;
+
+                        for (int run = 0; run < RUNS; ++run) {
+                            vector<Boid> boids;
+                            initFlock(boids, numBoids);
+
+                            omp_set_schedule(schedulers[schedIdx], chunkSize);
+
+                            double startTime = omp_get_wtime();
+                            for (int frame = 0; frame < FRAMES; ++frame) {
+                                updateBoids(boids, threads, opts[optIdx]);
+                            }
+                            double currentElapsed = omp_get_wtime() - startTime;
+                            elapsedAccumulator += currentElapsed;
+
+                            if (run == 0) {
+                                minElapsed = currentElapsed;
+                                maxElapsed = currentElapsed;
+                            } else {
+                                if (currentElapsed < minElapsed) minElapsed = currentElapsed;
+                                if (currentElapsed > maxElapsed) maxElapsed = currentElapsed;
+                            }
                         }
-                        double currentElapsed = omp_get_wtime() - startTime;
-                        elapsedAccumulator += currentElapsed;
+                        //calcola i valori medi e i tempi per boid
+                        double avgElapsed = elapsedAccumulator / static_cast<double>(RUNS);
+                        double timePerBoidUs = (avgElapsed * 1000000.0) / (FRAMES * numBoids);
 
-                        if (run == 0) {
-                            minElapsed = currentElapsed;
-                            maxElapsed = currentElapsed;
-                        } else {
-                            if (currentElapsed < minElapsed) minElapsed = currentElapsed;
-                            if (currentElapsed > maxElapsed) maxElapsed = currentElapsed;
-                        }
+                        cout << setw(8) << threads
+                             << setw(22) << fixed << setprecision(4) << avgElapsed
+                             << setw(12) << fixed << setprecision(4) << minElapsed
+                             << setw(12) << fixed << setprecision(4) << maxElapsed;
+
+                        double speedup = seqTime / avgElapsed;
+                        cout << setw(11) << fixed << setprecision(2) << speedup << "x";
+
+                        cout << setw(24) << fixed << setprecision(3) << timePerBoidUs << endl;
+                        //salva i dati nel file csv
+                        csvFile << optNames[optIdx] << ","
+                                << schedNames[schedIdx] << ","
+                                << numBoids << ","
+                                << threads << ","
+                                << chunkSize << ","
+                                << numChunks << ","
+                                << fixed << setprecision(6) << avgElapsed << ","
+                                << fixed << setprecision(6) << minElapsed << ","
+                                << fixed << setprecision(6) << maxElapsed << ","
+                                << fixed << setprecision(6) << seqTime << ","
+                                << setprecision(2) << speedup << ","
+                                << setprecision(3) << timePerBoidUs << "\n";
                     }
-                    //calcola i valori medi e i tempi per boid
-                    double avgElapsed = elapsedAccumulator / static_cast<double>(RUNS);
-                    double timePerBoidUs = (avgElapsed * 1000000.0) / (FRAMES * numBoids);
-
-                    cout << setw(8) << threads
-                         << setw(22) << fixed << setprecision(4) << avgElapsed
-                         << setw(12) << fixed << setprecision(4) << minElapsed
-                         << setw(12) << fixed << setprecision(4) << maxElapsed;
-
-                    double speedup = seqTime / avgElapsed;
-                    cout << setw(11) << fixed << setprecision(2) << speedup << "x";
-
-                    cout << setw(24) << fixed << setprecision(3) << timePerBoidUs << endl;
-                    //salva i dati nel file csv
-                    csvFile << optNames[optIdx] << ","
-                            << schedNames[schedIdx] << ","
-                            << numBoids << ","
-                            << threads << ","
-                            << fixed << setprecision(6) << avgElapsed << ","
-                            << fixed << setprecision(6) << minElapsed << ","
-                            << fixed << setprecision(6) << maxElapsed << ","
-                            << fixed << setprecision(6) << seqTime << ","
-                            << setprecision(2) << speedup << ","
-                            << setprecision(3) << timePerBoidUs << "\n";
                 }
             }
         }

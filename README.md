@@ -21,7 +21,7 @@ Naive, Squared Distance and Bounding Box keep an all-pairs structure. Grid reduc
 
 Each frame uses two distinct phases. The first phase calculates the pending position and velocity of every boid. All threads read the same current flock and each iteration writes only the pending state of one boid. The second phase commits the pending values after the first phase has completed.
 
-This structure preserves the same frame semantics used by the sequential implementation. It also avoids locks, critical sections and atomic operations. The OpenMP version distributes the outer boid loop with `schedule(runtime)`. The benchmark selects static or dynamic scheduling with a chunk size of 64.
+This structure preserves the same frame semantics used by the sequential implementation. It also avoids locks, critical sections and atomic operations. The OpenMP version distributes the outer boid loop with `schedule(runtime)`. The benchmark combines static and dynamic scheduling with chunk sizes 1, 8, 32, 64, 128 and 256.
 
 ## Graphical simulation
 
@@ -36,11 +36,12 @@ The benchmark executes 50 frames for every configuration and repeats each test f
 - populations of 2000, 5000, 10000 and 20000 boids;
 - 1, 2, 4, 6, 8, 12, 18 and 24 OpenMP threads;
 - Naive, Squared Distance, Bounding Box and Grid;
-- static and dynamic OpenMP scheduling.
+- static and dynamic OpenMP scheduling;
+- chunk sizes 1, 8, 32, 64, 128 and 256.
 
 A separate sequential baseline is calculated for every population and optimization profile. The reported speedup therefore compares an OpenMP configuration with the corresponding sequential implementation.
 
-The benchmark writes `benchmark_results.csv` in the program working directory. The file contains the optimization, scheduling policy, number of boids, thread count, mean time, minimum time, maximum time, speedup and average time per boid.
+The benchmark writes `benchmark_results.csv` in the program working directory. The file contains the optimization, scheduling policy, number of boids, thread count, chunk size, number of chunks, mean time, minimum time, maximum time, speedup and average time per boid.
 
 ## Project structure
 
@@ -95,3 +96,5 @@ Its location depends on the working directory selected by CLion. With the defaul
 The one-thread OpenMP configuration includes the cost of the parallel region and is not identical to the sequential baseline. Thread scaling is most useful up to the physical-core and logical-thread region of the processor. Configurations above the available hardware contexts represent oversubscription and may provide little improvement.
 
 The Grid profile must be interpreted separately from thread-level speedup. Grid changes the amount of work by reducing the neighbour candidates. OpenMP changes how the remaining work is distributed. The largest total improvement is obtained when both effects are combined.
+
+Chunk size changes the scheduling granularity for the same profile, scheduler, population and thread count. Small chunks create more work assignments. Large chunks reduce assignment overhead but provide fewer opportunities to redistribute uneven iterations.
