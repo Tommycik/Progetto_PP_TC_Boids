@@ -93,8 +93,8 @@ Its location depends on the working directory selected by CLion. With the defaul
 
 ## Interpretation of results
 
-The one-thread OpenMP configuration includes the cost of the parallel region and is not identical to the sequential baseline. Thread scaling is most useful up to the physical-core and logical-thread region of the processor. Configurations above the available hardware contexts represent oversubscription and may provide little improvement.
+The one-thread OpenMP configuration includes the cost of the parallel region and is not identical to the sequential baseline. Thread scaling is most useful up to the physical-core and logical-thread region of the processor, configurations above the available hardware contexts represent oversubscription and may provide little improvement.
 
-The Grid profile must be interpreted separately from thread-level speedup. Grid changes the amount of work by reducing the neighbour candidates. OpenMP changes how the remaining work is distributed. The largest total improvement is obtained when both effects are combined.
+The Grid profile must be interpreted separately from thread-level speedup, it changes the amount of work by reducing the neighbor candidates. OpenMP changes how the remaining work is distributed. The largest total improvement is obtained when both effects are combined.
 
 Chunk size changes the scheduling granularity for the same profile, scheduler, population and thread count. Small chunks create more work assignments. Large chunks reduce assignment overhead but provide fewer opportunities to redistribute uneven iterations.
