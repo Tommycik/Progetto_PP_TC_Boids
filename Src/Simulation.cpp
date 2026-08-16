@@ -178,7 +178,7 @@ void updateBoids(vector<Boid>& boids, int threads, OptimizationLevel opt) {
             grid[cellIdx].push_back(i);
         }
     }
-    //regione paralela
+    //regione parallela
     #pragma omp parallel
     {
         // calcola l'update per ogni boid
