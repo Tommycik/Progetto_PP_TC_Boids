@@ -164,7 +164,7 @@ void updateBoidsSequential(vector<Boid>& boids, OptimizationLevel opt) {
         boids[i].commit();
     }
 }
-// aggiorna i boids in base all'ottimizzazione scelta in modo paralelo
+// aggiorna i boids in base all'ottimizzazione scelta in modo parallelo
 void updateBoids(vector<Boid>& boids, int threads, OptimizationLevel opt) {
     int numBoids = boids.size();
     // setta il numero di thread
