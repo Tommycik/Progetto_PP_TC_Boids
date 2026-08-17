@@ -51,14 +51,14 @@ enum OptimizationLevel {
     NAIVE,          // la peggiore usa sqrt e usa molti più cicli di clock
     SQUARED_DIST,   // usa il quadrato della distanza e quindi solo somme e moltiplicazioni, meno cicli necessari
     BOUNDING_BOX,   // controlla subito la distanza se troppa non fa nessun calcolo
-    GRID,           // i boids controllano solo la loro tile e quelle adiacenti
+    GRID,           // i boids controllano solo la loro cella e quelle adiacenti
 };
 
 // funzione per ottenere la cella nella griglia
 inline int getCellIndex(float x, float y) {
     int cx = static_cast<int>(x / cellSize);
     int cy = static_cast<int>(y / cellSize);
-    // protezione per boid che fluttuano oltre i margini prima di rigirarsi
+    // protezione per boid che fluttuano oltre i margini prima di girarsi
     if (cx < 0) cx = 0; if (cx >= gridCols) cx = gridCols - 1;
     if (cy < 0) cy = 0; if (cy >= gridRows) cy = gridRows - 1;
     return cy * gridCols + cx;
