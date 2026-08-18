@@ -2,9 +2,9 @@
 
 ## Project overview
 
-This project implements a two-dimensional boids simulation and studies the effect of CPU parallelism on flocking behaviour. Each boid updates its motion from three rules. Cohesion moves it toward the local group. Separation avoids very close neighbours. Alignment adjusts its direction toward the direction of the surrounding flock.
+This project implements a two-dimensional boids simulation and studies the effect of CPU parallelism on flocking behaviour. Each boid updates its motion from three rules: Cohesion moves it toward the local group, Separation avoids very close neighbours and Alignment adjusts its direction toward the direction of the surrounding flock.
 
-The project contains a sequential implementation and an OpenMP implementation. It also compares four neighbour-search profiles. The objective is not only to obtain a faster simulation. The benchmark separates the improvement produced by the algorithm from the improvement produced by additional CPU threads.
+The project contains a sequential and an OpenMP implementation. It also compares four neighbour-search profiles. The benchmark separates the improvement produced by the algorithm from the improvement produced by additional CPU threads.
 
 ## Main implementations
 
