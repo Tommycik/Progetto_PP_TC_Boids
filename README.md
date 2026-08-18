@@ -74,8 +74,8 @@ A Release build must be used for meaningful performance results. Debug builds di
 The program does not require command-line arguments. It displays this menu:
 
 ```text
-1. Simulazione Grafica (GUI SFML)
-2. Esegui Benchmark (Test prestazioni per relazione)
+1. Simulazione Grafica
+2. Esegui Benchmark
 3. Esci
 ```
 
