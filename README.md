@@ -67,7 +67,7 @@ A Release build must be used for meaningful performance results. Debug builds di
 
 1. Open the project directory in CLion.
 2. Wait for the CMake configuration and the SFML download to finish.
-3. Select the `Project_1_TC` target.
+3. Select the target.
 4. Select the Release configuration.
 5. Run the target from CLion.
 
